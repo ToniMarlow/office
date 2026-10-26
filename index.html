@@ -57,13 +57,13 @@ textarea{min-height:90px;resize:vertical}
   <h2>Нужно твоё внимание</h2>
   <div id="attn"></div>
 
-  <h2>Проекты</h2>
+  <h2>Агенты и проекты</h2>
   <div id="projects"></div>
 
   <h2>Добавить отчёт</h2>
   <div class="glass">
     <select id="fp"></select>
-    <select id="fa"><option>Claude</option><option>Gemini</option><option>ChatGPT</option><option>Другой</option></select>
+    <select id="fa"></select>
     <textarea id="paste" placeholder="Вставь сюда отчёт от ИИ в формате:&#10;Что сделано: ...&#10;Что не вышло: ...&#10;Что дальше: ..."></textarea>
     <div class="row"><button class="g" id="parse">Разобрать по полям</button></div>
     <div class="lbl">Что сделано</div><textarea id="fd"></textarea>
@@ -80,7 +80,7 @@ const SB=supabase.createClient("https://wkswesrhdrrtivhgcnip.supabase.co","eyJhb
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const ST={new:"Новое",checked:"Проверено",problem:"Есть проблема"};
-let projects=[],reports=[];
+let agents=[],projects=[],reports=[];
 
 function card(r){
   const p=projects.find(x=>x.id===r.project_id);
@@ -96,18 +96,32 @@ function render(){
   const att=reports.filter(r=>r.status!=="checked");
   $("stat").textContent=`Всего отчётов: ${reports.length}. Ждут проверки: ${att.filter(r=>r.status==="new").length}. С проблемами: ${att.filter(r=>r.status==="problem").length}.`;
   $("attn").innerHTML=att.length?att.map(card).join(""):'<div class="glass empty">Всё проверено. Новых отчётов нет.</div>';
-  $("projects").innerHTML=projects.map(p=>{
-    const rs=reports.filter(r=>r.project_id===p.id);
-    return `<div class="glass"><b>${esc(p.emoji)} ${esc(p.title)}</b> <span class="lbl">отчётов: ${rs.length}</span>
-    ${rs.length?`<details><summary class="lbl">Показать последние</summary>${rs.slice(0,5).map(card).join("")}</details>`:'<div class="empty">Отчётов пока нет.</div>'}</div>`;
-  }).join("");
-  $("fp").innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("");
+  const proj=p=>{const rs=reports.filter(r=>r.project_id===p.id);
+    const n=rs.filter(r=>r.status==="new").length,pr=rs.filter(r=>r.status==="problem").length;
+    return `<div class="glass" style="margin:8px 0 0"><b>${esc(p.emoji)} ${esc(p.title)}</b> <span class="lbl">отчётов: ${rs.length}${n?`, ждут проверки: ${n}`:""}${pr?`, проблем: ${pr}`:""}</span>
+    ${rs.length?`<details><summary class="lbl">Показать последние</summary>${rs.slice(0,5).map(card).join("")}</details>`:'<div class="empty">Отчётов пока нет.</div>'}</div>`};
+  $("projects").innerHTML=agents.map(a=>{
+    const ps=projects.filter(p=>p.agent_id===a.id);
+    const ar=reports.filter(r=>ps.some(p=>p.id===r.project_id));
+    const last=ar[0]?new Date(ar[0].created_at).toLocaleDateString("ru-RU",{day:"numeric",month:"short"}):"нет отчётов";
+    return `<div class="glass"><div class="row"><b style="font-size:18px">${esc(a.emoji)} ${esc(a.name)}</b><span class="pill">проектов: ${ps.length}</span><span class="pill">последний отчёт: ${last}</span></div>${ps.map(proj).join("")||'<div class="empty">Проекты не назначены.</div>'}</div>`;
+  }).join("")+projects.filter(p=>!p.agent_id).map(proj).join("");
+  if(!$("fp").options.length)fill();
 }
+function syncAgent(){const p=projects.find(x=>x.id===$("fp").value);const a=agents.find(x=>x.id===p?.agent_id);if(a)$("fa").value=a.name}
+function fill(){
+  $("fp").innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("");
+  $("fa").innerHTML=agents.map(a=>`<option>${esc(a.name)}</option>`).join("")+"<option>Другой</option>";
+  syncAgent();
+}
+$("fp").onchange=syncAgent;
 async function load(){
+  const c=await SB.from("ao_agents").select("*").order("sort");
   const a=await SB.from("ao_projects").select("*").order("sort");
   const b=await SB.from("ao_reports").select("*").order("created_at",{ascending:false});
-  if(a.error||b.error){$("stat").textContent="Не удалось загрузить данные: "+(a.error||b.error).message;return}
-  projects=a.data;reports=b.data;render();
+  const er=a.error||b.error||c.error;
+  if(er){$("stat").textContent="Не удалось загрузить данные: "+er.message;return}
+  agents=c.data;projects=a.data;reports=b.data;render();
 }
 async function enter(){
   const {data:{session}}=await SB.auth.getSession();

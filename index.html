@@ -35,6 +35,9 @@ textarea{min-height:90px;resize:vertical}
 :focus-visible{outline:3px solid var(--new);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .hide{display:none}
+.b{padding:9px 13px;border-radius:16px;margin:6px 0;white-space:pre-wrap;max-width:92%}
+.b.user{background:var(--new);color:#fff;margin-left:auto}.b.model{background:rgba(120,140,200,.22)}
+#log{max-height:340px;overflow:auto;margin:8px 0}
 </style>
 </head>
 <body>
@@ -59,6 +62,16 @@ textarea{min-height:90px;resize:vertical}
 
   <h2>Агенты и проекты</h2>
   <div id="projects"></div>
+
+  <h2>Чат с агентом</h2>
+  <div class="glass">
+    <select id="cp"></select>
+    <div id="log"></div>
+    <textarea id="cin" placeholder="Напиши агенту задачу или вопрос" style="min-height:70px"></textarea>
+    <div class="msg" id="cmsg"></div>
+    <div class="row"><button id="csend">Отправить</button><button class="ok" id="crep">Составить отчёт</button><button class="g" id="cclr">Очистить чат</button></div>
+    <p class="lbl">Сейчас на сайте доступен Gemini. История чата хранится до закрытия страницы, а отчёты сохраняются навсегда.</p>
+  </div>
 
   <h2>Добавить отчёт</h2>
   <div class="glass">
@@ -108,11 +121,36 @@ function render(){
   }).join("")+projects.filter(p=>!p.agent_id).map(proj).join("");
   if(!$("fp").options.length)fill();
 }
+let chats={};
+function drawLog(){const h=chats[$("cp").value]||[];
+  $("log").innerHTML=h.length?h.map(m=>`<div class="b ${m.role}">${esc(m.text)}</div>`).join(""):'<div class="empty">Напиши первое сообщение.</div>';
+  $("log").scrollTop=1e9}
+function fillChat(){const ps=projects.filter(p=>p.agent_id==="gemini");
+  $("cp").innerHTML=ps.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)} — Gemini</option>`).join("");drawLog()}
+async function callAgent(mode){
+  const pid=$("cp").value;if(!pid){$("cmsg").textContent="Нет проектов, закреплённых за Gemini.";return}
+  const h=chats[pid]=chats[pid]||[];
+  if(!h.length){$("cmsg").textContent="Сначала напиши агенту хотя бы одно сообщение.";return}
+  $("cmsg").textContent="Агент думает…";["csend","crep"].forEach(i=>$(i).disabled=true);
+  const {data,error}=await SB.functions.invoke("agent-chat",{body:{project_id:pid,mode,messages:h}});
+  ["csend","crep"].forEach(i=>$(i).disabled=false);
+  let err=data?.error;
+  if(error){try{err=(await error.context.json()).error}catch{err=error.message}}
+  if(err){$("cmsg").textContent=err;return}
+  $("cmsg").textContent="";
+  if(mode==="chat"){h.push({role:"model",text:data.reply});drawLog()}
+  else{await load();$("cmsg").textContent="Отчёт сохранён, он появился в блоке «Нужно твоё внимание».";window.scrollTo({top:0,behavior:"smooth"})}
+}
+$("cp").onchange=drawLog;
+$("csend").onclick=()=>{const t=$("cin").value.trim();if(!t)return;const pid=$("cp").value;if(!pid)return;
+  (chats[pid]=chats[pid]||[]).push({role:"user",text:t});$("cin").value="";drawLog();callAgent("chat")};
+$("crep").onclick=()=>callAgent("report");
+$("cclr").onclick=()=>{chats[$("cp").value]=[];$("cmsg").textContent="";drawLog()};
 function syncAgent(){const p=projects.find(x=>x.id===$("fp").value);const a=agents.find(x=>x.id===p?.agent_id);if(a)$("fa").value=a.name}
 function fill(){
   $("fp").innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("");
   $("fa").innerHTML=agents.map(a=>`<option>${esc(a.name)}</option>`).join("")+"<option>Другой</option>";
-  syncAgent();
+  syncAgent();fillChat();
 }
 $("fp").onchange=syncAgent;
 async function load(){

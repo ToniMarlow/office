@@ -35,6 +35,16 @@ textarea{min-height:90px;resize:vertical}
 :focus-visible{outline:3px solid var(--new);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .hide{display:none}
+#office{position:relative;border-radius:18px;overflow:hidden;border:3px solid var(--edge);margin:8px 0}
+#office svg{display:block;width:100%;height:auto}
+.seat{position:absolute;top:0;bottom:0;width:44%;background:none;border:0;padding:0;border-radius:0;color:#14213d}
+#sa{left:4%}#sb{left:52%}
+.bub{position:absolute;left:50%;top:17%;transform:translateX(-50%);width:max-content;max-width:100%;background:#fff;border:2px solid #14213d;border-radius:6px;padding:4px 8px;font:12px/1.3 ui-monospace,Menlo,monospace;text-align:center}
+.bub.work{background:#dff0ff}.bub.wait{background:#fff3c9}.bub.stuck{background:#ffd9dc}
+.nm{position:absolute;left:50%;bottom:4%;transform:translateX(-50%);background:#14213d;color:#fff;border-radius:4px;padding:1px 10px;font:12px ui-monospace,Menlo,monospace}
+.scr.work{animation:fl 1.2s steps(2) infinite}@keyframes fl{50%{fill:#7fe3a0}}
+@media (prefers-reduced-motion:reduce){.scr.work{animation:none}}
+.t{padding:8px 0;border-top:1px solid var(--edge)}
 .b{padding:9px 13px;border-radius:16px;margin:6px 0;white-space:pre-wrap;max-width:92%}
 .b.user{background:var(--new);color:#fff;margin-left:auto}.b.model{background:rgba(120,140,200,.22)}
 #log{max-height:340px;overflow:auto;margin:8px 0}
@@ -56,6 +66,27 @@ textarea{min-height:90px;resize:vertical}
 <section id="app" class="hide">
   <div class="row" style="justify-content:space-between"><h1>ИИ-офис</h1><button class="g" id="out">Выйти</button></div>
   <p class="sub" id="stat"></p>
+  <div id="office">
+  <svg viewBox="0 0 160 96" shape-rendering="crispEdges" role="img" aria-label="Пиксельный офис с двумя сотрудниками">
+  <rect width="160" height="96" fill="#7d8da1"/><rect width="160" height="30" fill="#b7c2ce"/><rect y="30" width="160" height="2" fill="#6a4a3b"/>
+  <rect x="4" y="6" width="24" height="24" fill="#46606b"/><rect x="6" y="9" width="20" height="3" fill="#a33"/><rect x="6" y="15" width="20" height="3" fill="#3a8"/><rect x="6" y="21" width="20" height="3" fill="#c93"/>
+  <rect x="34" y="4" width="26" height="26" fill="#3b4a56"/><rect x="46" y="4" width="1" height="26" fill="#2a3640"/>
+  <rect x="64" y="6" width="6" height="8" fill="#eef"/><rect x="92" y="5" width="9" height="10" fill="#2db"/>
+  <rect x="74" y="12" width="8" height="8" fill="#9fd3f2"/><rect x="73" y="20" width="10" height="10" fill="#e6ebef"/>
+  <rect x="106" y="14" width="8" height="12" fill="#e0b64d"/><rect x="106" y="26" width="8" height="2" fill="#a88a35"/>
+  <rect x="124" y="4" width="14" height="26" fill="#2f4a52"/><rect x="142" y="4" width="14" height="26" fill="#2f4a52"/>
+  <g fill="#4c6b73"><rect x="126" y="8" width="10" height="4"/><rect x="126" y="16" width="10" height="4"/><rect x="126" y="24" width="10" height="4"/><rect x="144" y="8" width="10" height="4"/><rect x="144" y="16" width="10" height="4"/><rect x="144" y="24" width="10" height="4"/></g>
+  <rect x="26" y="50" width="10" height="16" fill="#222"/><rect x="28" y="42" width="7" height="3" fill="#c0541e"/><rect x="28" y="45" width="7" height="5" fill="#f1c7a5"/><rect x="26" y="51" width="11" height="9" fill="#2e5aa8"/><rect x="31" y="51" width="1" height="6" fill="#c33"/>
+  <rect x="14" y="58" width="52" height="12" fill="#cfd6dd"/><rect x="14" y="70" width="52" height="6" fill="#9aa6b2"/>
+  <rect x="44" y="52" width="12" height="7" fill="#15151a"/><rect class="scr" id="scrA" x="45" y="53" width="10" height="5" fill="#3c6"/><rect x="44" y="60" width="12" height="2" fill="#333"/><rect x="18" y="55" width="9" height="3" fill="#fff"/><rect x="20" y="52" width="6" height="3" fill="#eee"/>
+  <rect x="96" y="50" width="10" height="16" fill="#222"/><rect x="98" y="42" width="7" height="3" fill="#1b1b1b"/><rect x="98" y="45" width="7" height="5" fill="#f1c7a5"/><rect x="96" y="51" width="11" height="9" fill="#6b3fa0"/><rect x="101" y="51" width="1" height="6" fill="#eee"/>
+  <rect x="84" y="58" width="52" height="12" fill="#cfd6dd"/><rect x="84" y="70" width="52" height="6" fill="#9aa6b2"/>
+  <rect x="114" y="52" width="12" height="7" fill="#15151a"/><rect class="scr" id="scrB" x="115" y="53" width="10" height="5" fill="#49c"/><rect x="114" y="60" width="12" height="2" fill="#333"/><rect x="88" y="55" width="9" height="3" fill="#fff"/><rect x="90" y="52" width="6" height="3" fill="#eee"/>
+  </svg>
+  <button class="seat" id="sa" data-agent="claude" aria-label="Задачи Claude"><span class="bub"></span><span class="nm">Claude</span></button>
+  <button class="seat" id="sb" data-agent="gemini" aria-label="Задачи Gemini"><span class="bub"></span><span class="nm">Gemini</span></button>
+  </div>
+  <div class="glass hide" id="tp"></div>
 
   <h2>Нужно твоё внимание</h2>
   <div id="attn"></div>
@@ -106,6 +137,7 @@ function card(r){
   <button class="bad" data-s="problem" data-id="${r.id}">Есть проблема</button></div></div>`;
 }
 function render(){
+  drawOffice();
   const att=reports.filter(r=>r.status!=="checked");
   $("stat").textContent=`Всего отчётов: ${reports.length}. Ждут проверки: ${att.filter(r=>r.status==="new").length}. С проблемами: ${att.filter(r=>r.status==="problem").length}.`;
   $("attn").innerHTML=att.length?att.map(card).join(""):'<div class="glass empty">Всё проверено. Новых отчётов нет.</div>';
@@ -146,6 +178,55 @@ $("csend").onclick=()=>{const t=$("cin").value.trim();if(!t)return;const pid=$("
   (chats[pid]=chats[pid]||[]).push({role:"user",text:t});$("cin").value="";drawLog();callAgent("chat")};
 $("crep").onclick=()=>callAgent("report");
 $("cclr").onclick=()=>{chats[$("cp").value]=[];$("cmsg").textContent="";drawLog()};
+let tasks=[],openAgent=null;
+const TS={todo:"в очереди",doing:"в работе",done:"готово",stuck:"застряло"};
+function agentState(a){
+  const ps=projects.filter(p=>p.agent_id===a.id).map(p=>p.id);
+  const mine=tasks.filter(t=>t.agent_id===a.id);
+  const stuck=mine.find(t=>t.status==="stuck"),doing=mine.find(t=>t.status==="doing");
+  const wait=reports.filter(r=>ps.includes(r.project_id)&&r.status==="new").length;
+  const prob=reports.filter(r=>ps.includes(r.project_id)&&r.status==="problem").length;
+  const todo=mine.filter(t=>t.status==="todo").length;
+  if(stuck)return["stuck","Застрял: "+stuck.title];
+  if(prob)return["stuck","Проблем в отчётах: "+prob];
+  if(doing)return["work","Работает: "+doing.title];
+  if(wait)return["wait","Ждёт проверки: "+wait];
+  return todo?["wait","Задач в очереди: "+todo]:["","Свободен"];
+}
+function drawOffice(){
+  [["claude","sa","scrA"],["gemini","sb","scrB"]].forEach(([id,seat,scr])=>{
+    const a=agents.find(x=>x.id===id);if(!a)return;
+    const [cls,txt]=agentState(a);const b=$(seat).querySelector(".bub");
+    b.className="bub "+cls;b.textContent=txt;$(scr).classList.toggle("work",cls==="work");
+  });
+  drawPanel();
+}
+function drawPanel(){
+  const el=$("tp"),a=agents.find(x=>x.id===openAgent);
+  if(!a){el.classList.add("hide");return}
+  const keep=$("tti")?.value||"";
+  const ps=projects.filter(p=>p.agent_id===a.id);
+  const ts=tasks.filter(t=>t.agent_id===a.id).slice(0,8);
+  el.classList.remove("hide");
+  el.innerHTML=`<b>${esc(a.emoji)} ${esc(a.name)}: задачи</b>
+  <select id="tpr">${ps.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("")}</select>
+  <input id="tti" placeholder="Новая задача на сегодня" value="${esc(keep)}">
+  <div class="msg" id="tmsg"></div><button id="tadd">Поставить задачу</button>
+  ${ts.map(t=>{const p=projects.find(x=>x.id===t.project_id);return `<div class="t"><div class="row"><b>${esc(t.title)}</b><span class="pill">${esc(p?.title||"")}</span><span class="pill">${TS[t.status]}</span></div>
+  <div class="row" style="margin-top:6px"><button class="g" data-t="${t.id}" data-ts="doing">В работу</button><button class="ok" data-t="${t.id}" data-ts="done">Готово</button><button class="bad" data-t="${t.id}" data-ts="stuck">Застряло</button><button class="g" data-td="${t.id}">Удалить</button></div></div>`}).join("")||'<div class="empty">Задач пока нет. Поставь первую.</div>'}`;
+}
+document.addEventListener("click",async e=>{
+  const sb=e.target.closest(".seat");
+  if(sb){openAgent=openAgent===sb.dataset.agent?null:sb.dataset.agent;drawPanel();return}
+  if(e.target.id==="tadd"){
+    const title=$("tti").value.trim();if(!title){$("tmsg").textContent="Напиши, что нужно сделать.";return}
+    const {error}=await SB.from("ao_tasks").insert({agent_id:openAgent,project_id:$("tpr").value||null,title});
+    if(error){$("tmsg").textContent="Не удалось сохранить: "+error.message;return}
+    $("tti").value="";await load();return}
+  const t=e.target.closest("button[data-t]"),d=e.target.closest("button[data-td]");
+  if(t){await SB.from("ao_tasks").update({status:t.dataset.ts,updated_at:new Date().toISOString()}).eq("id",t.dataset.t);await load()}
+  if(d){await SB.from("ao_tasks").delete().eq("id",d.dataset.td);await load()}
+});
 function syncAgent(){const p=projects.find(x=>x.id===$("fp").value);const a=agents.find(x=>x.id===p?.agent_id);if(a)$("fa").value=a.name}
 function fill(){
   $("fp").innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("");
@@ -156,10 +237,11 @@ $("fp").onchange=syncAgent;
 async function load(){
   const c=await SB.from("ao_agents").select("*").order("sort");
   const a=await SB.from("ao_projects").select("*").order("sort");
+  const t=await SB.from("ao_tasks").select("*").order("created_at",{ascending:false});
   const b=await SB.from("ao_reports").select("*").order("created_at",{ascending:false});
   const er=a.error||b.error||c.error;
   if(er){$("stat").textContent="Не удалось загрузить данные: "+er.message;return}
-  agents=c.data;projects=a.data;reports=b.data;render();
+  agents=c.data;projects=a.data;reports=b.data;tasks=t.error?[]:t.data;render();
 }
 async function enter(){
   const {data:{session}}=await SB.auth.getSession();

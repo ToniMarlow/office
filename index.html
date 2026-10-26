@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ИИ-офис</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--ink:#14213d;--mute:#5b6b8c;--glass:rgba(255,255,255,.55);--edge:rgba(255,255,255,.8);--ok:#1f9d6b;--bad:#d64550;--new:#3b6ef5}
+@media (prefers-color-scheme:dark){:root{--ink:#e8eefc;--mute:#9db0d6;--glass:rgba(30,40,70,.55);--edge:rgba(255,255,255,.14)}}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif;color:var(--ink);min-height:100vh;
+background:radial-gradient(1000px 600px at 10% -10%,#bfe3ff,transparent),radial-gradient(900px 600px at 100% 0,#ffd9ec,transparent),#eef3ff;
+padding:env(safe-area-inset-top) 16px calc(40px + env(safe-area-inset-bottom))}
+@media (prefers-color-scheme:dark){body{background:radial-gradient(1000px 600px at 10% -10%,#1b3a6b,transparent),radial-gradient(900px 600px at 100% 0,#4a1f47,transparent),#0c1224}}
+main{max-width:760px;margin:0 auto}
+h1{font-size:28px;margin:22px 0 4px}h2{font-size:19px;margin:26px 0 10px}
+.sub{color:var(--mute);margin:0 0 14px}
+.glass{background:var(--glass);border:1px solid var(--edge);border-radius:22px;padding:16px;margin:10px 0;
+backdrop-filter:blur(18px) saturate(1.4);-webkit-backdrop-filter:blur(18px) saturate(1.4);box-shadow:0 8px 30px rgba(40,60,120,.12)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.pill{font-size:13px;padding:2px 10px;border-radius:99px;background:rgba(120,140,200,.2)}
+.pill.new{background:var(--new);color:#fff}.pill.checked{background:var(--ok);color:#fff}.pill.problem{background:var(--bad);color:#fff}
+.lbl{font-size:13px;color:var(--mute);margin:8px 0 2px}
+.txt{white-space:pre-wrap;margin:0}
+button,select,input,textarea{font:inherit;color:inherit}
+button{border:0;border-radius:14px;padding:9px 16px;background:var(--new);color:#fff;cursor:pointer;transition:transform .15s,opacity .15s}
+button:active{transform:scale(.96)}button.g{background:rgba(120,140,200,.25);color:var(--ink)}
+button.ok{background:var(--ok)}button.bad{background:var(--bad)}
+input,select,textarea{width:100%;border-radius:14px;border:1px solid var(--edge);background:rgba(255,255,255,.35);padding:10px 12px;margin:4px 0}
+@media (prefers-color-scheme:dark){input,select,textarea{background:rgba(0,0,0,.25)}}
+textarea{min-height:90px;resize:vertical}
+.msg{color:var(--bad);min-height:22px;margin:6px 0}
+.empty{color:var(--mute);padding:6px 0}
+:focus-visible{outline:3px solid var(--new);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.hide{display:none}
+</style>
+</head>
+<body>
+<main>
+<section id="login" class="hide">
+  <h1>ИИ-офис</h1>
+  <p class="sub">Вход только для владельца.</p>
+  <div class="glass">
+    <input id="em" type="email" placeholder="Почта" autocomplete="email">
+    <input id="pw" type="password" placeholder="Пароль (от 6 символов)" autocomplete="current-password">
+    <div class="msg" id="lmsg"></div>
+    <div class="row"><button id="bin">Войти</button><button id="bup" class="g">Создать аккаунт</button></div>
+  </div>
+</section>
+
+<section id="app" class="hide">
+  <div class="row" style="justify-content:space-between"><h1>ИИ-офис</h1><button class="g" id="out">Выйти</button></div>
+  <p class="sub" id="stat"></p>
+
+  <h2>Нужно твоё внимание</h2>
+  <div id="attn"></div>
+
+  <h2>Проекты</h2>
+  <div id="projects"></div>
+
+  <h2>Добавить отчёт</h2>
+  <div class="glass">
+    <select id="fp"></select>
+    <select id="fa"><option>Claude</option><option>Gemini</option><option>ChatGPT</option><option>Другой</option></select>
+    <textarea id="paste" placeholder="Вставь сюда отчёт от ИИ в формате:&#10;Что сделано: ...&#10;Что не вышло: ...&#10;Что дальше: ..."></textarea>
+    <div class="row"><button class="g" id="parse">Разобрать по полям</button></div>
+    <div class="lbl">Что сделано</div><textarea id="fd"></textarea>
+    <div class="lbl">Что не вышло</div><textarea id="ff"></textarea>
+    <div class="lbl">Что дальше</div><textarea id="fn"></textarea>
+    <div class="msg" id="amsg"></div>
+    <button id="save">Сохранить отчёт</button>
+  </div>
+</section>
+</main>
+
+<script>
+const SB=supabase.createClient("https://wkswesrhdrrtivhgcnip.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indrc3dlc3JoZHJydGl2aGdjbmlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEzNDk2MjAsImV4cCI6MjEwNjkyNTYyMH0.sQFby4QMLKrpamWrAsUzRVKhnRdiX41K8CUy4TKLVSs");
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const ST={new:"Новое",checked:"Проверено",problem:"Есть проблема"};
+let projects=[],reports=[];
+
+function card(r){
+  const p=projects.find(x=>x.id===r.project_id);
+  const d=new Date(r.created_at).toLocaleString("ru-RU",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+  const blk=(l,t)=>t?`<div class="lbl">${l}</div><p class="txt">${esc(t)}</p>`:"";
+  return `<div class="glass"><div class="row"><b>${esc(p?.emoji||"")} ${esc(p?.title||r.project_id)}</b>
+  <span class="pill">${esc(r.agent)}</span><span class="pill ${r.status}">${ST[r.status]}</span><span class="lbl" style="margin:0">${d}</span></div>
+  ${blk("Что сделано",r.done)}${blk("Что не вышло",r.failed)}${blk("Что дальше",r.next_step)}
+  <div class="row" style="margin-top:12px"><button class="ok" data-s="checked" data-id="${r.id}">Проверено</button>
+  <button class="bad" data-s="problem" data-id="${r.id}">Есть проблема</button></div></div>`;
+}
+function render(){
+  const att=reports.filter(r=>r.status!=="checked");
+  $("stat").textContent=`Всего отчётов: ${reports.length}. Ждут проверки: ${att.filter(r=>r.status==="new").length}. С проблемами: ${att.filter(r=>r.status==="problem").length}.`;
+  $("attn").innerHTML=att.length?att.map(card).join(""):'<div class="glass empty">Всё проверено. Новых отчётов нет.</div>';
+  $("projects").innerHTML=projects.map(p=>{
+    const rs=reports.filter(r=>r.project_id===p.id);
+    return `<div class="glass"><b>${esc(p.emoji)} ${esc(p.title)}</b> <span class="lbl">отчётов: ${rs.length}</span>
+    ${rs.length?`<details><summary class="lbl">Показать последние</summary>${rs.slice(0,5).map(card).join("")}</details>`:'<div class="empty">Отчётов пока нет.</div>'}</div>`;
+  }).join("");
+  $("fp").innerHTML=projects.map(p=>`<option value="${esc(p.id)}">${esc(p.emoji)} ${esc(p.title)}</option>`).join("");
+}
+async function load(){
+  const a=await SB.from("ao_projects").select("*").order("sort");
+  const b=await SB.from("ao_reports").select("*").order("created_at",{ascending:false});
+  if(a.error||b.error){$("stat").textContent="Не удалось загрузить данные: "+(a.error||b.error).message;return}
+  projects=a.data;reports=b.data;render();
+}
+async function enter(){
+  const {data:{session}}=await SB.auth.getSession();
+  if(!session){$("app").classList.add("hide");$("login").classList.remove("hide");return}
+  const {data:ok}=await SB.rpc("ao_claim");
+  if(!ok){await SB.auth.signOut();$("lmsg").textContent="Этот аккаунт не имеет доступа.";$("login").classList.remove("hide");$("app").classList.add("hide");return}
+  $("login").classList.add("hide");$("app").classList.remove("hide");load();
+}
+async function auth(up){
+  $("lmsg").textContent="";
+  const cred={email:$("em").value.trim(),password:$("pw").value};
+  const {error}=up?await SB.auth.signUp(cred):await SB.auth.signInWithPassword(cred);
+  if(error){$("lmsg").textContent=error.message;return}
+  enter();
+}
+$("bin").onclick=()=>auth(false);$("bup").onclick=()=>auth(true);
+$("out").onclick=async()=>{await SB.auth.signOut();enter()};
+document.addEventListener("click",async e=>{
+  const b=e.target.closest("button[data-id]");if(!b)return;
+  const {error}=await SB.from("ao_reports").update({status:b.dataset.s}).eq("id",b.dataset.id);
+  if(!error){const r=reports.find(x=>x.id===b.dataset.id);r.status=b.dataset.s;render()}
+});
+$("parse").onclick=()=>{
+  const t=$("paste").value;
+  const grab=(re)=>{const m=t.match(re);return m?m[1].trim():""};
+  const stop="(?=\\n\\s*(?:Что сделано|Что не вышло|Что дальше|Проект)\\s*:|$)";
+  $("fd").value=grab(new RegExp("Что сделано\\s*:\\s*([\\s\\S]*?)"+stop,"i"));
+  $("ff").value=grab(new RegExp("Что не вышло\\s*:\\s*([\\s\\S]*?)"+stop,"i"));
+  $("fn").value=grab(new RegExp("Что дальше\\s*:\\s*([\\s\\S]*?)"+stop,"i"));
+};
+$("save").onclick=async()=>{
+  $("amsg").textContent="";
+  const row={project_id:$("fp").value,agent:$("fa").value,done:$("fd").value.trim(),failed:$("ff").value.trim(),next_step:$("fn").value.trim()};
+  if(!row.done&&!row.failed&&!row.next_step){$("amsg").textContent="Заполни хотя бы одно поле отчёта.";return}
+  const {error}=await SB.from("ao_reports").insert(row);
+  if(error){$("amsg").textContent="Не удалось сохранить: "+error.message;return}
+  ["paste","fd","ff","fn"].forEach(i=>$(i).value="");load();window.scrollTo({top:0,behavior:"smooth"});
+};
+enter();
+</script>
+</body>
+</html>
